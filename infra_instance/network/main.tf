@@ -1,6 +1,8 @@
 resource aws_vpc "my_vpc" {
-  cidr_block = var.vpc_cidr
-  tags       = {
+  cidr_block           = var.vpc_cidr
+  enable_dns_hostnames = true
+  enable_dns_support   = true
+  tags                 = {
     Name = "my_vpc"
   }
 }
@@ -14,49 +16,12 @@ resource "aws_subnet" "my_private_subnet" {
     Name = "my_private_subnet"
   }
 }
-
-resource "aws_subnet" "my_public_subnet" {
-  cidr_block              = var.public_subnet_cidr
-  vpc_id                  = aws_vpc.my_vpc.id
-  availability_zone       = var.subnet_az
-  map_public_ip_on_launch = true
-  tags                    = {
-    Name = "my_public_subnet"
-  }
-}
 // Subnet end
 
-
-// Internet gateway
-resource "aws_internet_gateway" "igw" {
-  vpc_id = aws_vpc.my_vpc.id
-  tags   = {
-    Name = "My IGW"
-  }
-}
-
-// Route table start
-resource "aws_route_table" "my_vpc_route_table" {
-  vpc_id = aws_vpc.my_vpc.id
-  tags   = {
-    Name = "My VPC Route table"
-  }
-}
-
+// Route table start}
 resource "aws_route_table_association" "my_private_subnet_association" {
   route_table_id = aws_vpc.my_vpc.default_route_table_id
   subnet_id      = aws_subnet.my_private_subnet.id
-}
-
-resource "aws_route_table_association" "my_public_subnet_association" {
-  route_table_id = aws_route_table.my_vpc_route_table.id
-  subnet_id      = aws_subnet.my_public_subnet.id
-}
-
-resource "aws_route" "igw_route" {
-  route_table_id         = aws_route_table.my_vpc_route_table.id
-  destination_cidr_block = "0.0.0.0/0"
-  gateway_id             = aws_internet_gateway.igw.id
 }
 // Route table end
 
@@ -70,40 +35,38 @@ resource "aws_vpc_endpoint_route_table_association" "vpc_endpoint_association" {
   route_table_id  = aws_vpc.my_vpc.default_route_table_id
   vpc_endpoint_id = aws_vpc_endpoint.s3_vpc_endpoint.id
 }
+
+resource "aws_vpc_endpoint" "endpoints" {
+  count               = length(var.vpc_endpoints)
+  vpc_id              = aws_vpc.my_vpc.id
+  service_name        = "com.amazonaws.${var.region}.${var.vpc_endpoints[count.index]}"
+  vpc_endpoint_type   = "Interface"
+  private_dns_enabled = "true"
+  security_group_ids  = [
+    aws_security_group.endpoint_sg.id
+  ]
+  subnet_ids          = [aws_subnet.my_private_subnet.id]
+}
 // VPC Endpoint end
 
 // Security groups
-resource "aws_security_group" "public_sg" {
-  vpc_id = aws_vpc.my_vpc.id
-  name   = "My public subnet SG"
-  ingress {
-    cidr_blocks = ["0.0.0.0/0"]
-    from_port   = 22
-    protocol    = "tcp"
-    to_port     = 22
-  }
-  egress {
-    cidr_blocks = ["0.0.0.0/0"]
-    from_port   = 0
-    protocol    = "-1"
-    to_port     = 0
-  }
-}
+resource "aws_security_group" "endpoint_sg" {
+  name        = "demo-endpoint-sg"
+  description = "Security Group for VPC Endpoints"
+  vpc_id      = aws_vpc.my_vpc.id
 
-resource "aws_security_group" "private_sg" {
-  vpc_id = aws_vpc.my_vpc.id
-  name   = "My private subnet SG"
   ingress {
-    security_groups = [aws_security_group.public_sg.id]
-    from_port   = 22
-    protocol    = "tcp"
-    to_port     = 22
-  }
-  egress {
-    cidr_blocks = ["0.0.0.0/0"]
     from_port   = 0
-    protocol    = "-1"
     to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = [var.vpc_cidr]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 }
 // Security Groups end

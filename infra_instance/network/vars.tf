@@ -18,3 +18,12 @@ variable "public_subnet_cidr" {
 variable "subnet_az" {
   type = string
 }
+
+variable "vpc_endpoints" {
+  default = [
+    "ssm",
+    "ec2messages",
+    "ec2",
+    "ssmmessages"
+  ]
+}

@@ -21,10 +21,10 @@ module "networking" {
 }
 
 module "instances" {
+  depends_on        = [module.networking]
+  region            = var.region
   source            = "./instance"
   key_pair_name     = "my_key_pair"
   private_sg        = module.networking.private_sg
-  public_sg         = module.networking.public_sg
   private_subnet_id = module.networking.private_subnet_id
-  public_subnet_id  = module.networking.public_subnet_id
 }

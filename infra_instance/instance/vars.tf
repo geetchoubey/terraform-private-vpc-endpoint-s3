@@ -7,10 +7,6 @@ variable "key_pair_name" {
   type = string
 }
 
-variable "public_subnet_id" {
-  type = string
-}
-
 variable "private_subnet_id" {
   type = string
 }
@@ -19,6 +15,6 @@ variable "private_sg" {
   type = string
 }
 
-variable "public_sg" {
+variable "region" {
   type = string
 }
