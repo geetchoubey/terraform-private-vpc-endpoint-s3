@@ -2,6 +2,9 @@
 
 The project has been divided in two directories, one for each infrastructure per account.
 
+## Architecture
+![AWS Architecture](./architecture.png)
+
 ### Part 1 - `infra_bucket`
 This contains terraform code for the following:
 - Create S3 bucket
